@@ -12,6 +12,7 @@ import (
 
 	pb_testproto "github.com/grpc-ecosystem/go-grpc-prometheus/examples/testproto"
 	"github.com/prometheus/client_golang/prometheus"
+	prom "github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
@@ -22,10 +23,53 @@ import (
 var (
 	// client metrics must satisfy the Collector interface
 	_ prometheus.Collector = NewClientMetrics()
+
+	// DefaultClientMetrics is the default instance of ClientMetrics. It is
+	// intended to be used in conjunction the default Prometheus metrics
+	// registry.
+	DefaultClientMetrics = NewClientMetrics()
+
+	// UnaryClientInterceptor is a gRPC client-side interceptor that provides Prometheus monitoring for Unary RPCs.
+	UnaryClientInterceptor = DefaultClientMetrics.UnaryClientInterceptor()
+
+	// StreamClientInterceptor is a gRPC client-side interceptor that provides Prometheus monitoring for Streaming RPCs.
+	StreamClientInterceptor = DefaultClientMetrics.StreamClientInterceptor()
 )
 
 func TestClientInterceptorSuite(t *testing.T) {
+	prom.MustRegister(DefaultClientMetrics.clientStartedCounter)
+	prom.MustRegister(DefaultClientMetrics.clientHandledCounter)
+	prom.MustRegister(DefaultClientMetrics.clientStreamMsgReceived)
+	prom.MustRegister(DefaultClientMetrics.clientStreamMsgSent)
+
 	suite.Run(t, &ClientInterceptorTestSuite{})
+}
+
+// EnableClientHandlingTimeHistogram turns on recording of handling time of
+// RPCs. Histogram metrics can be very expensive for Prometheus to retain and
+// query. This function acts on the DefaultClientMetrics variable and the
+// default Prometheus metrics registry.
+func EnableClientHandlingTimeHistogram(opts ...HistogramOption) {
+	DefaultClientMetrics.EnableClientHandlingTimeHistogram(opts...)
+	prom.Register(DefaultClientMetrics.clientHandledHistogram)
+}
+
+// EnableClientStreamReceiveTimeHistogram turns on recording of
+// single message receive time of streaming RPCs.
+// This function acts on the DefaultClientMetrics variable and the
+// default Prometheus metrics registry.
+func EnableClientStreamReceiveTimeHistogram(opts ...HistogramOption) {
+	DefaultClientMetrics.EnableClientStreamReceiveTimeHistogram(opts...)
+	prom.Register(DefaultClientMetrics.clientStreamRecvHistogram)
+}
+
+// EnableClientStreamSendTimeHistogram turns on recording of
+// single message send time of streaming RPCs.
+// This function acts on the DefaultClientMetrics variable and the
+// default Prometheus metrics registry.
+func EnableClientStreamSendTimeHistogram(opts ...HistogramOption) {
+	DefaultClientMetrics.EnableClientStreamSendTimeHistogram(opts...)
+	prom.Register(DefaultClientMetrics.clientStreamSendHistogram)
 }
 
 type ClientInterceptorTestSuite struct {
