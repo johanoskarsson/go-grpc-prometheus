@@ -86,6 +86,13 @@ func NewClientMetrics(counterOpts ...CounterOption) *ClientMetrics {
 	}
 }
 
+func (m *ClientMetrics) MustRegister() {
+	prom.MustRegister(m.clientStartedCounter)
+	prom.MustRegister(m.clientHandledCounter)
+	prom.MustRegister(m.clientStreamMsgReceived)
+	prom.MustRegister(m.clientStreamMsgSent)
+}
+
 // Describe sends the super-set of all possible descriptors of metrics
 // collected by this Collector to the provided channel and returns once
 // the last descriptor has been sent.

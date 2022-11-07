@@ -2,6 +2,7 @@ package grpc_prometheus
 
 import (
 	"context"
+
 	"github.com/grpc-ecosystem/go-grpc-prometheus/packages/grpcstatus"
 	prom "github.com/prometheus/client_golang/prometheus"
 
@@ -55,6 +56,13 @@ func NewServerMetrics(counterOpts ...CounterOption) *ServerMetrics {
 		},
 		serverHandledHistogram: nil,
 	}
+}
+
+func (m *ServerMetrics) MustRegister() {
+	prom.MustRegister(m.serverStartedCounter)
+	prom.MustRegister(m.serverHandledCounter)
+	prom.MustRegister(m.serverStreamMsgReceived)
+	prom.MustRegister(m.serverStreamMsgSent)
 }
 
 // EnableHandlingTimeHistogram enables histograms being registered when
